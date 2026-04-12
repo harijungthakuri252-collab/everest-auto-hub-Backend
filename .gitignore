@@ -1,5 +1,19 @@
+# Dependencies
 node_modules/
+
+# Environment — contains secrets, NEVER commit
 .env
 .env.local
 .env.production
-dist/
+.env.development
+
+# Local image uploads (now using Cloudinary)
+uploads/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
