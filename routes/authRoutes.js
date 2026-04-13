@@ -57,7 +57,10 @@ router.post('/register', async (req, res) => {
       await User.create({ name, email, phone, password: hashedPw, isVerified: false, otp, otpExpiry });
     }
 
-    await sendVerificationEmail(email, name, otp);
+    // Send email in background — don't block the response
+    sendVerificationEmail(email, name, otp).catch(err =>
+      console.error('[REGISTER] Email failed:', err.message)
+    );
 
     return res.status(201).json({ message: 'Verification code sent to your email', email });
   } catch (err) {
@@ -113,7 +116,10 @@ router.post('/resend-otp', async (req, res) => {
     user.otpExpiry = new Date(Date.now() + 10 * 60 * 1000);
     await user.save();
 
-    await sendVerificationEmail(email, user.name, otp);
+    // Send in background
+    sendVerificationEmail(email, user.name, otp).catch(err =>
+      console.error('[RESEND-OTP] Email failed:', err.message)
+    );
     return res.json({ message: 'New verification code sent to your email' });
   } catch (err) {
     console.error('[RESEND-OTP]', err.message);
@@ -176,9 +182,10 @@ router.post('/forgot-password', async (req, res) => {
     user.otpExpiry = new Date(Date.now() + 10 * 60 * 1000);
     await user.save();
 
-    console.log(`[FORGOT-PASSWORD] Sending reset OTP to: ${email}`);
-    await sendPasswordResetEmail(email, user.name, otp);
-    console.log(`[FORGOT-PASSWORD] Email sent successfully to: ${email}`);
+    // Send in background
+    sendPasswordResetEmail(email, user.name, otp).catch(err =>
+      console.error('[FORGOT-PASSWORD] Email failed:', err.message)
+    );
 
     return res.json({ message: 'Reset code sent to your email', email });
   } catch (err) {
