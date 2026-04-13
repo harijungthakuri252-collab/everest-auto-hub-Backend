@@ -7,6 +7,10 @@ const getTransporter = () =>
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASS,
     },
+    pool: true,
+    maxConnections: 5,
+    rateDelta: 20000,
+    rateLimit: 5,
   });
 
 const baseTemplate = (title, bodyHtml) => `

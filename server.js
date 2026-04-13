@@ -77,6 +77,17 @@ app.use('/api/notices',      require('./routes/noticeRoutes'));
 
 app.get('/', (req, res) => res.json({ message: 'Everest Auto Hub API Running' }));
 
+// Email test route (remove after testing)
+app.get('/test-email', async (req, res) => {
+  try {
+    const { sendVerificationEmail } = require('./utils/sendEmail');
+    await sendVerificationEmail(process.env.EMAIL_USER, 'Test', '123456');
+    res.json({ message: 'Test email sent to ' + process.env.EMAIL_USER });
+  } catch (err) {
+    res.status(500).json({ message: 'Email failed: ' + err.message });
+  }
+});
+
 // ─── Connect to MongoDB then start server ─────────────────────────────────────
 mongoose.connect(process.env.MONGO_URI, {
   serverSelectionTimeoutMS: 15000,
@@ -84,6 +95,19 @@ mongoose.connect(process.env.MONGO_URI, {
   family: 4,
 }).then(() => {
   console.log('✅ MongoDB Connected');
+
+  // Clean up unverified users older than 24 hours every hour
+  const User = require('./models/User');
+  setInterval(async () => {
+    try {
+      const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      const result = await User.deleteMany({ isVerified: false, createdAt: { $lt: cutoff } });
+      if (result.deletedCount > 0) console.log(`🧹 Cleaned ${result.deletedCount} unverified users`);
+    } catch (err) {
+      console.error('Cleanup error:', err.message);
+    }
+  }, 60 * 60 * 1000); // every hour
+
   app.listen(process.env.PORT || 5000, () => {
     console.log(`🚀 Server running on port ${process.env.PORT || 5000}`);
   });

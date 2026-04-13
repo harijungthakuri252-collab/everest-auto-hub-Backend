@@ -12,7 +12,7 @@ const { protect, adminOnly } = require('../middleware/auth');
 router.get('/stats', protect, adminOnly, async (req, res) => {
   try {
     const [users, appointments, orders, products] = await Promise.all([
-      User.countDocuments({ role: 'user' }),
+      User.countDocuments({ role: 'user', isVerified: true }),
       Appointment.countDocuments(),
       Order.countDocuments(),
       Product.countDocuments({ isActive: true }),
@@ -103,10 +103,10 @@ router.get('/notification-counts', protect, adminOnly, async (req, res) => {
   }
 });
 
-// Get all users
+// Get all users — only verified users
 router.get('/users', protect, adminOnly, async (req, res) => {
   try {
-    const users = await User.find().select('-password').sort({ createdAt: -1 });
+    const users = await User.find({ isVerified: true }).select('-password').sort({ createdAt: -1 });
     res.json(users);
   } catch (err) {
     res.status(500).json({ message: err.message });

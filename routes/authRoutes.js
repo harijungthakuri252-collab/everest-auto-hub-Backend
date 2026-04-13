@@ -42,22 +42,35 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ message: 'Password must be at least 8 characters and include a letter and a number' });
 
     const exists = await User.findOne({ email });
+
+    // Already has a verified account — block registration
     if (exists && exists.isVerified)
-      return res.status(400).json({ message: 'An account with this email already exists' });
+      return res.status(400).json({ message: 'An account with this email already exists. Please login instead.' });
 
-    const otp       = generateOTP();
-    const otpExpiry = new Date(Date.now() + 10 * 60 * 1000);
-    const hashedPw  = bcrypt.hashSync(password, 12); // increased from 10 to 12
-
+    // Has unverified account — check if they're trying too many times
     if (exists && !exists.isVerified) {
+      // Update with new OTP and resend
+      const otp       = generateOTP();
+      const otpExpiry = new Date(Date.now() + 10 * 60 * 1000);
+      const hashedPw  = bcrypt.hashSync(password, 12);
       exists.otp = otp; exists.otpExpiry = otpExpiry;
       exists.password = hashedPw; exists.name = name; exists.phone = phone;
       await exists.save();
-    } else {
-      await User.create({ name, email, phone, password: hashedPw, isVerified: false, otp, otpExpiry });
+
+      sendVerificationEmail(email, name, otp).catch(err =>
+        console.error('[REGISTER] Email failed:', err.message)
+      );
+
+      return res.status(201).json({ message: 'Verification code sent to your email', email });
     }
 
-    // Send email in background — don't block the response
+    // New user — create account
+    const otp       = generateOTP();
+    const otpExpiry = new Date(Date.now() + 10 * 60 * 1000);
+    const hashedPw  = bcrypt.hashSync(password, 12);
+
+    await User.create({ name, email, phone, password: hashedPw, isVerified: false, otp, otpExpiry });
+
     sendVerificationEmail(email, name, otp).catch(err =>
       console.error('[REGISTER] Email failed:', err.message)
     );
