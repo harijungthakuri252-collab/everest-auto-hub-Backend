@@ -1,6 +1,19 @@
-const { Resend } = require('resend');
+const nodemailer = require('nodemailer');
 
-const getResend = () => new Resend(process.env.RESEND_API_KEY);
+// Use port 587 with STARTTLS — works on Render (port 465 is blocked, 587 is open)
+const getTransporter = () =>
+  nodemailer.createTransport({
+    host: 'smtp.gmail.com',
+    port: 587,
+    secure: false, // STARTTLS
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS,
+    },
+    tls: {
+      rejectUnauthorized: false,
+    },
+  });
 
 const otpBox = (otp, label, expiry = '10 minutes') => `
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#1a1a1a;border:2px solid #f97316;border-radius:10px;margin:24px 0;">
@@ -53,10 +66,11 @@ const sendVerificationEmail = async (toEmail, name, otp) => {
     ${otpBox(otp, 'Your verification code')}
     <p style="margin:0;font-size:13px;color:#555;">Valid for <strong style="color:#f8f9fa;">10 minutes</strong>. One use only.</p>`;
 
-  await getResend().emails.send({
-    from: 'Everest Auto Hub <onboarding@resend.dev>',
+  await getTransporter().sendMail({
+    from: `"Everest Auto Hub" <${process.env.EMAIL_USER}>`,
     to: toEmail,
     subject: `${otp} is your Everest Auto Hub verification code`,
+    text: `Hi ${name},\n\nYour verification code is: ${otp}\n\nExpires in 10 minutes.`,
     html: baseTemplate('Verify Your Email', body),
   });
 };
@@ -69,12 +83,13 @@ const sendPasswordResetEmail = async (toEmail, name, otp) => {
       Hi <strong style="color:#f8f9fa;">${name}</strong>, use the code below to reset your password.
     </p>
     ${otpBox(otp, 'Your password reset code')}
-    <p style="margin:0;font-size:13px;color:#555;">Valid for <strong style="color:#f8f9fa;">10 minutes</strong>. If you didn't request this, ignore it.</p>`;
+    <p style="margin:0;font-size:13px;color:#555;">Valid for <strong style="color:#f8f9fa;">10 minutes</strong>.</p>`;
 
-  await getResend().emails.send({
-    from: 'Everest Auto Hub <onboarding@resend.dev>',
+  await getTransporter().sendMail({
+    from: `"Everest Auto Hub" <${process.env.EMAIL_USER}>`,
     to: toEmail,
     subject: `${otp} is your Everest Auto Hub password reset code`,
+    text: `Hi ${name},\n\nYour password reset code is: ${otp}\n\nExpires in 10 minutes.`,
     html: baseTemplate('Reset Your Password', body),
   });
 };
@@ -111,10 +126,11 @@ const sendOrderStatusEmail = async (toEmail, name, order) => {
       </table>
     </div>`;
 
-  await getResend().emails.send({
-    from: 'Everest Auto Hub <onboarding@resend.dev>',
+  await getTransporter().sendMail({
+    from: `"Everest Auto Hub" <${process.env.EMAIL_USER}>`,
     to: toEmail,
     subject: `${s.emoji} Order #${String(order._id).slice(-8)} — ${s.title}`,
+    text: `Hi ${name},\n\n${s.msg}\n\nOrder #${String(order._id).slice(-8)}\nTotal: $${order.totalPrice?.toFixed(2)}`,
     html: baseTemplate(s.title, body),
   });
 };
