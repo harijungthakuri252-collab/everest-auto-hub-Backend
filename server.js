@@ -87,7 +87,6 @@ app.get('/test-email', async (req, res) => {
     res.status(500).json({ message: 'Email failed: ' + err.message });
   }
 });
-
 // ─── Connect to MongoDB then start server ─────────────────────────────────────
 mongoose.connect(process.env.MONGO_URI, {
   serverSelectionTimeoutMS: 15000,
