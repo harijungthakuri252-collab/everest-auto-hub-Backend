@@ -1,12 +1,6 @@
 const express = require('express');
 const router = express.Router();
 const Order = require('../models/Order');
-const { protect, adminOnly } = require('../middleware/auth');
-const { sendOrderStatusEmail } = require('../utils/sendEmail');
-
-const express = require('express');
-const router = express.Router();
-const Order = require('../models/Order');
 const Product = require('../models/Product');
 const { protect, adminOnly } = require('../middleware/auth');
 const { sendOrderStatusEmail } = require('../utils/sendEmail');
@@ -22,7 +16,6 @@ router.post('/', protect, async (req, res) => {
     if (!shippingAddress?.name || !shippingAddress?.phone || !shippingAddress?.address)
       return res.status(400).json({ message: 'Shipping address is required' });
 
-    // Validate each item and recalculate price from DB
     let calculatedTotal = 0;
     const validatedItems = [];
 
@@ -34,12 +27,11 @@ router.post('/', protect, async (req, res) => {
       if (item.quantity < 1)
         return res.status(400).json({ message: 'Invalid quantity' });
 
-      // Use DB price — never trust client price
       validatedItems.push({
         product: product._id,
         name: product.name,
         image: product.images?.[0] || '',
-        price: product.price, // from DB
+        price: product.price,
         size: item.size || '',
         color: item.color || '',
         quantity: item.quantity,
@@ -53,7 +45,7 @@ router.post('/', protect, async (req, res) => {
       items: validatedItems,
       shippingAddress,
       paymentMethod: paymentMethod || 'COD',
-      totalPrice: calculatedTotal, // server-calculated
+      totalPrice: calculatedTotal,
     });
 
     res.status(201).json(order);
@@ -93,7 +85,6 @@ router.put('/:id', protect, adminOnly, async (req, res) => {
 
     if (!order) return res.status(404).json({ message: 'Order not found' });
 
-    // Send status update email
     const email = order.user?.email || order.shippingAddress?.email;
     const name  = order.user?.name  || order.shippingAddress?.name;
     if (email) {
