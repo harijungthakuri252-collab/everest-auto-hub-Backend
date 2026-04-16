@@ -76,30 +76,6 @@ app.use('/api/site-content', require('./routes/siteContentRoutes'));
 app.use('/api/notices',      require('./routes/noticeRoutes'));
 
 app.get('/', (req, res) => res.json({ message: 'Everest Auto Hub API Running' }));
-
-// Email test route (remove after testing)
-app.get('/test-email', async (req, res) => {
-  try {
-    const nodemailer = require('nodemailer');
-    const transporter = nodemailer.createTransport({
-      host: 'smtp.gmail.com',
-      port: 587,
-      secure: false,
-      auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
-      tls: { rejectUnauthorized: false },
-    });
-    await transporter.verify();
-    await transporter.sendMail({
-      from: process.env.EMAIL_USER,
-      to: process.env.EMAIL_USER,
-      subject: 'Test from Render',
-      text: 'Email is working on Render with port 587!',
-    });
-    res.json({ message: 'Email sent successfully via port 587!' });
-  } catch (err) {
-    res.status(500).json({ message: 'Email failed: ' + err.message });
-  }
-});
 // ─── Connect to MongoDB then start server ─────────────────────────────────────
 mongoose.connect(process.env.MONGO_URI, {
   serverSelectionTimeoutMS: 15000,

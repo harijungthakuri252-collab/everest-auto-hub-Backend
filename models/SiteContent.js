@@ -69,6 +69,9 @@ const siteContentSchema = new mongoose.Schema({
   footerAddress:    { type: String, default: 'Sydney, NSW, Australia' },
   footerCopyright:  { type: String, default: '© 2024 Everest Auto Hub. All rights reserved.' },
 
+  // ── GLOBAL SETTINGS ──────────────────────────────────────
+  defaultCurrency:  { type: String, default: 'AUD' },
+
 }, { timestamps: true });
 
 module.exports = mongoose.model('SiteContent', siteContentSchema);

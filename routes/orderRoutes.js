@@ -4,10 +4,58 @@ const Order = require('../models/Order');
 const { protect, adminOnly } = require('../middleware/auth');
 const { sendOrderStatusEmail } = require('../utils/sendEmail');
 
-// Place order
+const express = require('express');
+const router = express.Router();
+const Order = require('../models/Order');
+const Product = require('../models/Product');
+const { protect, adminOnly } = require('../middleware/auth');
+const { sendOrderStatusEmail } = require('../utils/sendEmail');
+
+// Place order — validates items and recalculates total on backend
 router.post('/', protect, async (req, res) => {
   try {
-    const order = await Order.create({ ...req.body, user: req.user._id });
+    const { items, shippingAddress, paymentMethod } = req.body;
+
+    if (!items || !Array.isArray(items) || items.length === 0)
+      return res.status(400).json({ message: 'No items in order' });
+
+    if (!shippingAddress?.name || !shippingAddress?.phone || !shippingAddress?.address)
+      return res.status(400).json({ message: 'Shipping address is required' });
+
+    // Validate each item and recalculate price from DB
+    let calculatedTotal = 0;
+    const validatedItems = [];
+
+    for (const item of items) {
+      const product = await Product.findById(item.product);
+      if (!product || !product.isActive)
+        return res.status(400).json({ message: `Product "${item.name}" is no longer available` });
+
+      if (item.quantity < 1)
+        return res.status(400).json({ message: 'Invalid quantity' });
+
+      // Use DB price — never trust client price
+      validatedItems.push({
+        product: product._id,
+        name: product.name,
+        image: product.images?.[0] || '',
+        price: product.price, // from DB
+        size: item.size || '',
+        color: item.color || '',
+        quantity: item.quantity,
+      });
+
+      calculatedTotal += product.price * item.quantity;
+    }
+
+    const order = await Order.create({
+      user: req.user._id,
+      items: validatedItems,
+      shippingAddress,
+      paymentMethod: paymentMethod || 'COD',
+      totalPrice: calculatedTotal, // server-calculated
+    });
+
     res.status(201).json(order);
   } catch (err) {
     res.status(500).json({ message: err.message });
