@@ -74,6 +74,7 @@ app.use('/api/upload',       require('./routes/uploadRoutes'));
 app.use('/api/home-content', require('./routes/homeContentRoutes'));
 app.use('/api/site-content', require('./routes/siteContentRoutes'));
 app.use('/api/notices',      require('./routes/noticeRoutes'));
+app.use('/api/payment',      require('./routes/paymentRoutes'));
 
 app.get('/', (req, res) => res.json({ message: 'Everest Auto Hub API Running' }));
 // ─── Connect to MongoDB then start server ─────────────────────────────────────
